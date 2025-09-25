@@ -372,14 +372,20 @@ def cadastrar_preco(cursor, conexao):
     id_procd = int(input("Id do procedimento/produto: "))
     preco = float(input("Preço do procedimento/produto em R$: "))
 
+    # Data de início (obrigatória)
     data_inicio = input("Data do início do preço (DD-MM-AAAA): ")
     data_inicio_sql = datetime.strptime(data_inicio, "%d-%m-%Y").strftime("%Y-%m-%d")
 
-    data_fim = input("Data do fim do preço (DD-MM-AAAA): ")
-    data_fim_sql = datetime.strptime(data_fim, "%d-%m-%Y").strftime("%Y-%m-%d")
+    # Data de fim (opcional)
+    data_fim = input("Data do fim do preço (DD-MM-AAAA) [pressione Enter se não houver]: ")
+    if data_fim.strip() == "":
+        data_fim_sql = None   # Vai gravar NULL no banco
+    else:
+        data_fim_sql = datetime.strptime(data_fim, "%d-%m-%Y").strftime("%Y-%m-%d")
 
     sql = "INSERT INTO tbl_precos (procedimento_id, preco, data_inicio, data_fim) VALUES (%s,%s,%s,%s)"
     valores = (id_procd, preco, data_inicio_sql, data_fim_sql)
+
     cursor.execute(sql, valores)
     conexao.commit()
     print("✅ Preço cadastrado com sucesso!")
@@ -798,8 +804,8 @@ while True:
     print("1 - Clientes ")
     print("2 - Procedimento ")
     print("3 - Atendimento ")
-    print("3 - Preco ")
-    print("4 - Finanças ")
+    print("4 - Preco ")
+    print("5 - Finanças ")
     print("0 - Sair")
 
     op_geral = int(input("Escolha uma opção: "))
