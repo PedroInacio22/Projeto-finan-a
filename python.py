@@ -246,6 +246,127 @@ def excluir_procedimento(cursor, conexao):
     conexao.commit()
     print("🗑️ Procedimento/Produto excluído com sucesso!")
 
+def cadastrar_atendimento(cursor, conexao):
+    cliente_id = int(input("Digite o ID do cliente: "))
+    procedimento_id = int(input("Digite o ID do procedimento: "))
+    data_atendimento = input("Digite a data do atendimento (AAAA-MM-DD): ")
+    preco_aplicado = float(input("Digite o preço aplicado: "))
+
+    sql = """INSERT INTO tbl_atendimento (cliente_id, procedimento_id, data_atendimento, preco_aplicado)
+             VALUES (%s, %s, %s, %s)"""
+    valores = (cliente_id, procedimento_id, data_atendimento, preco_aplicado)
+
+    cursor.execute(sql, valores)
+    conexao.commit()
+    print("✅ Atendimento cadastrado com sucesso!")
+
+def mostrar_atendimentos(cursor):
+    print("\n--- FILTROS DE ATENDIMENTO ---")
+    print("1 - Todos")
+    print("2 - Por Data")
+    print("3 - Por Valor")
+    print("4 - Por Cliente")
+    print("5 - Por Procedimento")
+    opcao = int(input("Escolha uma opção: "))
+
+    base_sql = """SELECT a.id_atendimento, c.nome, p.nome_procedimento, 
+                         a.data_atendimento, a.preco_aplicado
+                  FROM tbl_atendimento a
+                  JOIN tbl_clientes c ON a.cliente_id = c.id_cliente
+                  JOIN tbl_procedimentos_e_produtos p ON a.procedimento_id = p.id_procedimento"""
+
+    valores = ()
+
+    if opcao == 1:  # Todos
+        sql = base_sql
+
+    elif opcao == 2:  # Por Data
+        data = input("Digite a data (AAAA-MM-DD): ")
+        sql = base_sql + " WHERE a.data_atendimento = %s"
+        valores = (data,)
+
+    elif opcao == 3:  # Por Valor
+        minimo = float(input("Digite o valor mínimo: "))
+        maximo = float(input("Digite o valor máximo: "))
+        sql = base_sql + " WHERE a.preco_aplicado BETWEEN %s AND %s"
+        valores = (minimo, maximo)
+
+    elif opcao == 4:  # Por Cliente
+        nome_cliente = input("Digite o nome do cliente (ou parte dele): ")
+        sql = base_sql + " WHERE c.nome LIKE %s"
+        valores = ("%" + nome_cliente + "%",)
+
+    elif opcao == 5:  # Por Procedimento
+        nome_proc = input("Digite o nome do procedimento (ou parte dele): ")
+        sql = base_sql + " WHERE p.nome_procedimento LIKE %s"
+        valores = ("%" + nome_proc + "%",)
+
+    else:
+        print("⚠️ Opção inválida!")
+        return
+
+    cursor.execute(sql, valores)
+    resultados = cursor.fetchall()
+
+    print("\n--- LISTA DE ATENDIMENTOS ---")
+    if resultados:
+        for row in resultados:
+            print(f"ID: {row[0]} | Cliente: {row[1]} | Procedimento: {row[2]} | Data: {row[3]} | Preço: R$ {row[4]:.2f}")
+    else:
+        print("Nenhum atendimento encontrado com esse filtro.")
+
+def alterar_atendimento(cursor, conexao):
+    id_atendimento = int(input("Digite o ID do atendimento que deseja alterar: "))
+
+    print("\n--- O que deseja alterar? ---")
+    print("1 - Cliente")
+    print("2 - Procedimento")
+    print("3 - Data do atendimento")
+    print("4 - Preço aplicado")
+    print("0 - Cancelar")
+
+    opcao = int(input("Escolha: "))
+
+    if opcao == 0:
+        print("❌ Alteração cancelada.")
+        return
+
+    if opcao == 1:
+        novo_cliente = int(input("Digite o novo ID do cliente: "))
+        sql = "UPDATE tbl_atendimento SET cliente_id = %s WHERE id_atendimento = %s"
+        valores = (novo_cliente, id_atendimento)
+
+    elif opcao == 2:
+        novo_proc = int(input("Digite o novo ID do procedimento: "))
+        sql = "UPDATE tbl_atendimento SET procedimento_id = %s WHERE id_atendimento = %s"
+        valores = (novo_proc, id_atendimento)
+
+    elif opcao == 3:
+        nova_data = input("Digite a nova data (AAAA-MM-DD): ")
+        sql = "UPDATE tbl_atendimento SET data_atendimento = %s WHERE id_atendimento = %s"
+        valores = (nova_data, id_atendimento)
+
+    elif opcao == 4:
+        novo_preco = float(input("Digite o novo preço aplicado: "))
+        sql = "UPDATE tbl_atendimento SET preco_aplicado = %s WHERE id_atendimento = %s"
+        valores = (novo_preco, id_atendimento)
+
+    else:
+        print("⚠️ Opção inválida!")
+        return
+
+    cursor.execute(sql, valores)
+    conexao.commit()
+    print("✅ Atendimento atualizado com sucesso!")
+
+def excluir_atendimento(cursor, conexao):
+    id_atendimento = int(input("Digite o ID do atendimento que deseja excluir: "))
+
+    sql = "DELETE FROM tbl_atendimento WHERE id_atendimento = %s"
+    cursor.execute(sql, (id_atendimento,))
+    conexao.commit()
+    print("✅ Atendimento excluído com sucesso!")
+
 def cadastrar_preco(cursor, conexao):
     print("Cadastrar preços dos procedimentos/produtos")
     id_procd = int(input("Id do procedimento/produto: "))
@@ -674,8 +795,9 @@ def excluir_lucro(cursor, conexao):
 
 while True:
     print("\n--- MENU PRINCIPAL ---")
-    print("1 - Clientes")
-    print("2 - Atendimento ")
+    print("1 - Clientes ")
+    print("2 - Procedimento ")
+    print("3 - Atendimento ")
     print("3 - Preco ")
     print("4 - Finanças ")
     print("0 - Sair")
@@ -734,7 +856,32 @@ while True:
             else:
                 print("⚠️ Opção inválida!")
 
-    elif op_geral == 3:  # Preços
+    elif op_geral == 3: #atendimento
+        while True:
+            print("\n--- MENU ATENDIMENTO ---")
+            print("1 - Cadastrar atendimento")
+            print("2 - Mostrar atendimentos")
+            print("3 - Alterar atendimento")
+            print("4 - Excluir atendimento")
+            print("0 - Voltar")
+
+            opcao = int(input("Escolha uma opção: "))
+
+            if opcao == 1:
+                cadastrar_atendimento(cursor, conexao)
+            elif opcao == 2:
+                mostrar_atendimentos(cursor)
+            elif opcao == 3:
+                alterar_atendimento(cursor, conexao)
+            elif opcao == 4:
+                excluir_atendimento(cursor, conexao)
+            elif opcao == 0:
+                break
+            else:
+                print("⚠️ Opção inválida!")
+
+
+    elif op_geral == 4:  # Preços
         while True:
             print("\n--- MENU PREÇOS ---")
             print("1 - Cadastrar preço")
@@ -758,7 +905,7 @@ while True:
             else:
                 print("⚠️ Opção inválida!")
 
-    elif op_geral == 4:  # Finanças
+    elif op_geral == 5:  # Finanças
         while True:
             print("\n--- MENU FINANÇAS ---")
             print("1 - Faturamento")
